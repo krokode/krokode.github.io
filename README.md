@@ -20,12 +20,14 @@ Features smooth inertia transitions, 3D depth scaling, and touch/drag gestures. 
 
 ---
 
-## Getting Started
+## Getting Started & Integration
 
-To drop the component into any static HTML page or non-React web project:
+### Traditional Web Projects (WordPress, PHP, Django, Shopify, Static Websites)
 
-### 1. Include Stylesheet & Script
-Load the Material Icons font, the stylesheet, and the script in your document `<head>`:
+Because this component is built using pure Vanilla JS and CSS, it has **zero external framework dependencies**. You can drop it directly into any traditional web project (WordPress, PHP, Django, Shopify, static websites, etc.) simply by adding standard `<script>` and `<link>` tags to your HTML templates.
+
+#### 1. Include Stylesheet & Script
+Load the Material Icons font, the stylesheet, and the script in your HTML template (e.g., in `header.php` for WordPress, base template for Django, or index file):
 
 ```html
 <!-- Google Material Symbols Outlined -->
@@ -41,15 +43,15 @@ Load the Material Icons font, the stylesheet, and the script in your document `<
 <script src="./bubble-carousel.js"></script>
 ```
 
-### 2. Add Mount Element
-Add a div element to act as the viewport container for your carousel:
+#### 2. Add Mount Element
+Place a container element where you want the carousel to render in your page/layout:
 
 ```html
 <div id="my-carousel" style="width: 100%; max-width: 600px; height: 350px;"></div>
 ```
 
-### 3. Instantiate the Class
-Instantiate the `BubbleCarousel` class pointing to your target div and config file:
+#### 3. Instantiate the Class
+Add a script block to initialize the carousel after the DOM loads:
 
 ```javascript
 document.addEventListener('DOMContentLoaded', async () => {
@@ -67,6 +69,99 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await carousel.init();
 });
+```
+
+---
+
+### React Integration
+
+To integrate the vanilla 3D Bubble Carousel into a React application, you can wrap it in a functional React component using standard hooks (`useRef` and `useEffect`).
+
+#### 1. Create a Wrapper Component
+
+Create a file named `BubbleCarouselWrapper.jsx`:
+
+```jsx
+import React, { useEffect, useRef } from 'react';
+import './bubble-carousel.css'; 
+// If importing directly from your JS folder, import BubbleCarousel class
+import BubbleCarousel from './bubble-carousel.js'; 
+
+export default function BubbleCarouselWrapper({ config, onIndexChange, onItemClick }) {
+  const containerRef = useRef(null);
+  const carouselInstanceRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Instantiate Vanilla BubbleCarousel
+    // Fall back to window.BubbleCarousel if loaded globally via script tags
+    const CarouselClass = BubbleCarousel || window.BubbleCarousel;
+    
+    const carousel = new CarouselClass(containerRef.current, {
+      config,
+      onIndexChange,
+      onItemClick
+    });
+
+    carousel.init().catch(console.error);
+    carouselInstanceRef.current = carousel;
+
+    // Clean up on unmount
+    return () => {
+      if (carouselInstanceRef.current) {
+        carouselInstanceRef.current.destroy();
+      }
+    };
+  }, [config]);
+
+  // Synchronize changes to items list if updated dynamically
+  useEffect(() => {
+    if (carouselInstanceRef.current && config?.items) {
+      carouselInstanceRef.current.updateItems(config.items);
+    }
+  }, [config?.items]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="bubble-carousel-react-container" 
+      style={{ width: '100%', height: '350px', position: 'relative' }}
+    />
+  );
+}
+```
+
+#### 2. Use it in a React Component
+
+```jsx
+import React, { useState } from 'react';
+import BubbleCarouselWrapper from './BubbleCarouselWrapper';
+
+const INITIAL_CONFIG = {
+  title: "My React Carousel",
+  baseBubbleSize: 120,
+  maxGrowth: 50,
+  defaultIndex: 0,
+  items: [
+    { id: "bubble_steps", name: "Steps", color: "oklch(76% 0.25 142)", units: ["steps"], steps: 6000, unit: "steps" },
+    { id: "bubble_cals", name: "Calories", color: "oklch(68% 0.22 220)", units: ["calories"], calories: 350, unit: "calories" }
+  ]
+};
+
+export function App() {
+  const [config, setConfig] = useState(INITIAL_CONFIG);
+
+  return (
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+      <BubbleCarouselWrapper 
+        config={config}
+        onIndexChange={(index) => console.log('Index changed to:', index)}
+        onItemClick={(item) => console.log('Clicked item:', item.name)}
+      />
+    </div>
+  );
+}
 ```
 
 ---
