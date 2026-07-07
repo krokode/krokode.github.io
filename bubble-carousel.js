@@ -1,0 +1,495 @@
+// 3DBubbleCarousel/bubble-carousel.js
+
+(() => {
+  const DIGITS_TO_SUPERSCRIPT = {
+    '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '+': '⁺', '-': '⁻'
+  };
+
+  function formatScientific(val) {
+    if (val === null || val === undefined) return '';
+    const num = Number(val);
+    if (isNaN(num)) return String(val);
+    
+    const str = num.toString();
+    const match = str.match(/^([+-]?\d+(?:\.\d+)?)[eE]\+?([+-]?\d+)$/);
+    if (match) {
+      const coeff = match[1];
+      const exp = match[2];
+      const superExp = exp.split('').map(char => DIGITS_TO_SUPERSCRIPT[char] || char).join('');
+      return `${coeff} × 10${superExp}`;
+    }
+    return str;
+  }
+
+  class BubbleCarousel {
+    constructor(elementOrSelector, options = {}) {
+      this.container = typeof elementOrSelector === 'string' ? document.querySelector(elementOrSelector) : elementOrSelector;
+      this.configPath = options.configPath || null;
+      this.config = options.config || null; // Direct configuration object override
+      this.onIndexChange = options.onIndexChange || null;
+      this.onItemClick = options.onItemClick || null;
+      this.renderBubbleBadge = options.renderBubbleBadge || null;
+      this.renderBubbleContent = options.renderBubbleContent || null;
+      this.overlayContent = options.overlayContent || null;
+
+      // Internal state
+      this.currentIndex = 0;
+      this.dragOffset = 0;
+      this.isDragging = false;
+      this.startX = 0;
+      this.dragActive = false;
+      this.needsRebuild = true; // Flag to rebuild DOM nodes only when data changes
+
+      // Dimensions
+      this.containerWidth = 800;
+      this.containerHeight = 350;
+      this.resizeObserver = null;
+      
+      // Bound functions for global listener removal
+      this.globalMouseMove = null;
+      this.globalMouseUp = null;
+    }
+
+    async init() {
+      if (!this.container) {
+        console.error('BubbleCarousel: Container element not found.');
+        return;
+      }
+
+      // Load configuration from path if config object is not directly supplied
+      if (this.configPath && !this.config) {
+        try {
+          const response = await fetch(this.configPath);
+          if (!response.ok) throw new Error(`HTTP error status: ${response.status}`);
+          this.config = await response.json();
+        } catch (err) {
+          console.error('BubbleCarousel: Failed to load config from path:', this.configPath, err);
+          return;
+        }
+      }
+
+      if (!this.config || !this.config.items) {
+        console.error('BubbleCarousel: No valid configuration or items provided.');
+        return;
+      }
+
+      this.currentIndex = this.config.defaultIndex !== undefined ? this.config.defaultIndex : 0;
+
+      this.buildDOM();
+      this.setupResizeObserver();
+      this.bindEvents();
+      
+      this.needsRebuild = true;
+      this.render();
+    }
+
+    buildDOM() {
+      this.container.innerHTML = '';
+      this.container.classList.add('bubble-carousel-widget-card');
+
+      // Header
+      if (this.config.title) {
+        const header = document.createElement('div');
+        header.className = 'widget-header';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'widget-title';
+        titleSpan.textContent = this.config.title;
+        header.appendChild(titleSpan);
+
+        this.headerActionsContainer = document.createElement('div');
+        this.headerActionsContainer.className = 'header-actions';
+        header.appendChild(this.headerActionsContainer);
+
+        this.container.appendChild(header);
+      }
+
+      // Bubbles wrapper
+      this.bubblesWrapper = document.createElement('div');
+      this.bubblesWrapper.className = 'bubble-carousel-container';
+      this.container.appendChild(this.bubblesWrapper);
+
+      // Overlay container (for editors, modals, etc.)
+      this.overlayContainer = document.createElement('div');
+      this.overlayContainer.className = 'overlay-container';
+      this.container.appendChild(this.overlayContainer);
+    }
+
+    setupResizeObserver() {
+      if (!this.bubblesWrapper) return;
+
+      if (!window.ResizeObserver) {
+        this.containerWidth = this.bubblesWrapper.clientWidth;
+        this.containerHeight = this.bubblesWrapper.clientHeight;
+        return;
+      }
+
+      this.resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          const rect = entry.contentRect;
+          this.containerWidth = rect.width || this.bubblesWrapper.clientWidth;
+          this.containerHeight = rect.height || this.bubblesWrapper.clientHeight;
+          this.needsRebuild = true; // Container size factors changed, recreate DOM elements
+          this.render();
+        }
+      });
+      this.resizeObserver.observe(this.bubblesWrapper);
+    }
+
+    bindEvents() {
+      if (!this.bubblesWrapper) return;
+
+      // Mouse handlers
+      this.bubblesWrapper.addEventListener('mousedown', (e) => this.dragStart(e.clientX));
+      
+      this.globalMouseMove = (e) => this.dragMove(e.clientX);
+      this.globalMouseUp = () => this.dragEnd();
+
+      window.addEventListener('mousemove', this.globalMouseMove);
+      window.addEventListener('mouseup', this.globalMouseUp);
+
+      // Touch handlers
+      this.bubblesWrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) this.dragStart(e.touches[0].clientX);
+      }, { passive: true });
+
+      this.bubblesWrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) this.dragMove(e.touches[0].clientX);
+      }, { passive: true });
+
+      this.bubblesWrapper.addEventListener('touchend', () => this.dragEnd());
+      this.bubblesWrapper.addEventListener('touchcancel', () => this.dragEnd());
+    }
+
+    dragStart(clientX) {
+      this.isDragging = true;
+      this.startX = clientX;
+      this.dragActive = false;
+      this.dragOffset = 0;
+      this.render();
+    }
+
+    dragMove(clientX) {
+      if (!this.isDragging) return;
+      const deltaX = clientX - this.startX;
+      if (Math.abs(deltaX) > 10) {
+        this.dragActive = true;
+      }
+      this.dragOffset = -deltaX / 150;
+      this.render(); // Style update only
+    }
+
+    dragEnd() {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+
+      const totalOffset = this.dragOffset;
+      this.dragOffset = 0;
+
+      if (Math.abs(totalOffset) > 0.2) {
+        const snapOffset = Math.round(totalOffset);
+        if (snapOffset !== 0) {
+          const numItems = this.config.items ? this.config.items.length : 0;
+          if (numItems > 0) {
+            const targetIndex = (this.currentIndex + snapOffset + numItems * 10) % numItems;
+            this.selectIndex(targetIndex);
+            return;
+          }
+        }
+      }
+      this.render();
+    }
+
+    selectIndex(idx) {
+      const numItems = this.config.items ? this.config.items.length : 0;
+      if (numItems === 0) return;
+
+      this.currentIndex = Math.max(0, Math.min(idx, numItems - 1));
+      this.needsRebuild = true; // Focus index changed, recreate badges on the new active bubble
+      if (this.onIndexChange) {
+        this.onIndexChange(this.currentIndex);
+      }
+      this.render();
+    }
+
+    handleBubbleClick(item, index) {
+      if (this.onItemClick) {
+        this.onItemClick(item, index, index === this.currentIndex);
+      } else {
+        if (index !== this.currentIndex) {
+          this.selectIndex(index);
+        }
+      }
+    }
+
+    calculateBubbleSize(item) {
+      const baseBubbleSize = this.config.baseBubbleSize || 120;
+      const maxGrowth = this.config.maxGrowth || 50;
+
+      if (item.isAddButton) {
+        return 85;
+      }
+
+      const activeUnit = item.unit || '';
+      const displayVal = (activeUnit && item[activeUnit] !== undefined) ? item[activeUnit] : (item.value ?? 0);
+      
+      // Resolve ratio: use goal progress if defined, otherwise fall back to logarithmic scaling
+      let ratio;
+      const valNum = Math.abs(Number(displayVal)) || 0;
+      
+      let displayGoal = item.goal;
+      if (activeUnit && item.goals && item.goals[activeUnit] !== undefined) {
+        displayGoal = item.goals[activeUnit];
+      }
+
+      if (displayGoal !== undefined && displayGoal !== null && displayGoal > 0) {
+        ratio = valNum / displayGoal;
+      } else {
+        // Continuous logarithmic scaling fallback: normalizes arbitrary scales monotonically
+        if (valNum <= 0) {
+          ratio = 0;
+        } else {
+          ratio = Math.log10(valNum) / 4; // log10(10000) = 4, which equals 100% (1.0 ratio)
+        }
+      }
+      
+      if (isNaN(ratio) || !isFinite(ratio)) ratio = 0;
+      ratio = Math.max(0, Math.min(ratio, 1.5));
+
+      return Math.round(baseBubbleSize + ratio * maxGrowth);
+    }
+
+    rebuildBubbleElements() {
+      if (!this.bubblesWrapper || !this.config || !this.config.items) return;
+
+      const items = this.config.items;
+      const bubbleScaleFactor = this.config.bubbleScaleFactor ?? Math.min(1.0, Math.max(0.45, this.containerHeight / 350));
+
+      this.bubblesWrapper.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const activeUnit = item.unit || '';
+        const resolvedVal = (activeUnit && item[activeUnit] !== undefined) ? item[activeUnit] : (item.value ?? 0);
+        
+        // Inject helper fields for custom render props
+        item.resolvedValue = resolvedVal;
+        item.resolvedUnit = activeUnit || item.unit || '';
+
+        // Wrapper element
+        const bubbleWrapper = document.createElement('div');
+        bubbleWrapper.className = 'activity-bubble-wrapper';
+        bubbleWrapper.setAttribute('data-index', index);
+
+        // Click handler
+        bubbleWrapper.addEventListener('click', (e) => {
+          if (this.dragActive) return;
+          this.handleBubbleClick(item, index);
+        });
+
+        // Label above bubble
+        const label = document.createElement('div');
+        label.className = 'bubble-label';
+        label.style.color = item.isAddButton ? 'var(--add-bubble-text)' : (item.labelColor || item.color);
+        label.textContent = item.name;
+        bubbleWrapper.appendChild(label);
+
+        // Bubble circle element
+        const circle = document.createElement('div');
+        circle.className = 'bubble-circle';
+
+        const rawSize = this.calculateBubbleSize(item);
+        const dynamicSize = Math.round(rawSize * bubbleScaleFactor);
+
+        circle.style.background = item.isAddButton ? 'var(--add-bubble-bg)' : item.color;
+        circle.style.border = item.isAddButton ? '1px solid var(--add-bubble-border)' : 'none';
+        circle.style.width = `${dynamicSize}px`;
+        circle.style.height = `${dynamicSize}px`;
+        circle.style.color = item.textColor || (item.isAddButton ? 'var(--add-bubble-text)' : 'inherit');
+        circle.style.position = 'relative';
+
+        // Bubble content rendering
+        if (this.renderBubbleContent) {
+          const customContent = this.renderBubbleContent(item, index === this.currentIndex);
+          if (typeof customContent === 'string') {
+            circle.innerHTML = customContent;
+          } else if (customContent instanceof HTMLElement) {
+            circle.appendChild(customContent);
+          }
+        } else {
+          if (item.isAddButton) {
+            const plusSpan = document.createElement('span');
+            plusSpan.className = 'bubble-val';
+            plusSpan.style.fontSize = `${Math.round(dynamicSize * 0.28)}px`;
+            plusSpan.textContent = '+';
+            circle.appendChild(plusSpan);
+          } else {
+            const displayVal = formatScientific(resolvedVal);
+            const charCount = displayVal.length;
+
+            let valFontSize;
+            if (charCount <= 2) {
+              valFontSize = Math.round(dynamicSize * 0.28);
+            } else if (charCount <= 4) {
+              valFontSize = Math.round(dynamicSize * 0.23);
+            } else if (charCount <= 6) {
+              valFontSize = Math.round(dynamicSize * 0.18);
+            } else {
+              valFontSize = Math.round(dynamicSize * 0.14);
+            }
+
+            const valSpan = document.createElement('span');
+            valSpan.className = 'bubble-val';
+            valSpan.style.fontSize = `${valFontSize}px`;
+            valSpan.textContent = displayVal;
+            circle.appendChild(valSpan);
+
+            const displayUnit = activeUnit || item.unit || '';
+            if (displayUnit) {
+              const unitSpan = document.createElement('span');
+              unitSpan.className = 'bubble-unit';
+              unitSpan.style.fontSize = `${Math.round(dynamicSize * 0.11)}px`;
+              unitSpan.textContent = displayUnit;
+              circle.appendChild(unitSpan);
+            }
+          }
+        }
+
+        // Badge overlay rendering (e.g. edit triggers, climb controls)
+        if (this.renderBubbleBadge) {
+          const badgeNode = this.renderBubbleBadge(item, index, index === this.currentIndex);
+          if (badgeNode) {
+            if (typeof badgeNode === 'string') {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = badgeNode;
+              circle.appendChild(tempDiv.firstElementChild);
+            } else if (badgeNode instanceof HTMLElement) {
+              circle.appendChild(badgeNode);
+            }
+          }
+        }
+
+        bubbleWrapper.appendChild(circle);
+        this.bubblesWrapper.appendChild(bubbleWrapper);
+      });
+    }
+
+    render() {
+      if (!this.bubblesWrapper || !this.config || !this.config.items) return;
+
+      const items = this.config.items;
+      const numItems = items.length;
+      if (numItems === 0) return;
+
+      // 1. Rebuild DOM elements only when data structure or layout changes
+      if (this.needsRebuild) {
+        this.rebuildBubbleElements();
+        this.needsRebuild = false;
+      }
+
+      // 2. Perform style updates only (high-performance rendering during drags)
+      const radiusX = this.config.radiusX ?? Math.max(130, Math.min(this.containerWidth * 0.36, 320));
+      const radiusY = this.config.radiusY ?? Math.max(30, Math.min(this.containerHeight * 0.22, 120));
+
+      const bubbleWrappers = this.bubblesWrapper.querySelectorAll('.activity-bubble-wrapper');
+
+      bubbleWrappers.forEach((bubbleWrapper) => {
+        const index = parseInt(bubbleWrapper.getAttribute('data-index'), 10);
+        const offsetIndex = index - (this.currentIndex + this.dragOffset);
+        const normalizedOffset = offsetIndex < -numItems / 2 ? offsetIndex + numItems : offsetIndex > numItems / 2 ? offsetIndex - numItems : offsetIndex;
+
+        const angle = (normalizedOffset * (2 * Math.PI)) / numItems;
+
+        // Coordinate calculations
+        const x_flat = Math.sin(angle) * radiusX;
+        const y_flat = Math.cos(angle) * radiusY;
+        const z = Math.cos(angle);
+
+        const tiltAngle = -15 * Math.PI / 180;
+        const x = x_flat * Math.cos(tiltAngle) - y_flat * Math.sin(tiltAngle);
+        const y = x_flat * Math.sin(tiltAngle) + y_flat * Math.cos(tiltAngle);
+
+        const depthScale = (z + 2) / 3;
+        const opacity = (z + 1.8) / 2.8;
+        const zIndex = Math.round((z + 1) * 100);
+
+        bubbleWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${depthScale})`;
+        bubbleWrapper.style.opacity = opacity;
+        bubbleWrapper.style.zIndex = zIndex;
+        bubbleWrapper.style.cursor = this.isDragging ? 'grabbing' : 'pointer';
+        
+        // Temporarily remove transition styles during mouse/touch drag events for instant visual feedback
+        bubbleWrapper.style.transition = this.isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease';
+      });
+
+      this.bubblesWrapper.style.cursor = this.isDragging ? 'grabbing' : 'grab';
+      
+      // Render Header Actions
+      if (this.headerActionsContainer && this.headerActionsNode) {
+        if (this.headerActionsContainer.children.length === 0) {
+          if (typeof this.headerActionsNode === 'string') {
+            this.headerActionsContainer.innerHTML = this.headerActionsNode;
+          } else {
+            this.headerActionsContainer.appendChild(this.headerActionsNode);
+          }
+        }
+      }
+
+      // Render Overlay Content
+      if (this.overlayContainer) {
+        if (this.overlayContentNode) {
+          if (this.overlayContainer.children.length === 0) {
+            if (typeof this.overlayContentNode === 'string') {
+              this.overlayContainer.innerHTML = this.overlayContentNode;
+            } else {
+              this.overlayContainer.appendChild(this.overlayContentNode);
+            }
+          }
+        } else {
+          this.overlayContainer.innerHTML = '';
+        }
+      }
+    }
+
+    setHeaderActions(node) {
+      this.headerActionsNode = node;
+      this.render();
+    }
+
+    setOverlayContent(node) {
+      this.overlayContentNode = node;
+      this.render();
+    }
+
+    updateItems(newItems) {
+      if (this.config) {
+        this.config.items = newItems;
+        this.needsRebuild = true; // Signal DOM refresh
+        this.render();
+      }
+    }
+
+    destroy() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+      }
+      
+      if (this.globalMouseMove) {
+        window.removeEventListener('mousemove', this.globalMouseMove);
+      }
+      if (this.globalMouseUp) {
+        window.removeEventListener('mouseup', this.globalMouseUp);
+      }
+    }
+  }
+
+  // Export for ES modules, fallback to global for direct script inclusion
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = BubbleCarousel;
+  } else if (typeof exports !== 'undefined') {
+    exports.BubbleCarousel = BubbleCarousel;
+  } else {
+    window.BubbleCarousel = BubbleCarousel;
+  }
+})();

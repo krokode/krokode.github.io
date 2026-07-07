@@ -1,0 +1,188 @@
+/* ================= STATS EDITOR OVERLAY STYLES ================= */
+
+.editor-overlay-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+}
+
+.editor-header span {
+  font-size: 1.25rem;
+}
+
+.editor-subtitle {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.editor-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 900;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.015em;
+}
+
+.editor-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Stepper container styles */
+.editor-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.step-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 42px;
+  height: 42px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.step-btn:hover {
+  background: var(--add-bubble-bg);
+  color: var(--text);
+}
+
+.step-btn:active {
+  transform: scale(0.9);
+}
+
+.editor-input-field {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 900;
+  text-align: center;
+  padding: 0.5rem;
+  width: 100%;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.editor-input-field::-webkit-outer-spin-button,
+.editor-input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editor-unit-label {
+  position: absolute;
+  right: 52px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  pointer-events: none;
+  text-transform: lowercase;
+}
+
+/* Action button layout */
+.editor-actions-grid {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.editor-btn-save {
+  flex: 1;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 48px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.editor-btn-save:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.editor-btn-save:active {
+  transform: translateY(0);
+}
+
+.editor-btn-cancel {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.editor-btn-cancel:hover {
+  background: var(--add-bubble-bg);
+  color: var(--text);
+  border-color: var(--text-secondary);
+}
+
+.editor-btn-cancel:active {
+  transform: scale(0.95);
+}
+
+.editor-btn-delete {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--error);
+  background: transparent;
+  color: var(--error);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.editor-btn-delete:hover {
+  background: var(--error);
+  color: #ffffff;
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--error) 30%, transparent);
+}
+
+.editor-btn-delete:active {
+  transform: scale(0.95);
+}
