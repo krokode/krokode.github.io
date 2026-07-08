@@ -1,4 +1,7 @@
-/* crypto-buble-example/crypto-custom.css */
+/* Container Query Setup */
+.bubble-circle {
+  container-type: size;
+}
 
 .crypto-bubble-content {
   display: flex;
@@ -10,6 +13,7 @@
   pointer-events: none; /* Allow clicks to pass through to the bubble click handler */
   width: 100%;
   height: 100%;
+  padding: 6% !important;
   box-sizing: border-box;
 }
 
@@ -19,6 +23,8 @@
   letter-spacing: 0.05em;
   opacity: 0.75;
   line-height: 1;
+  font-size: 9.5cqw;
+  margin-bottom: 2.5cqw;
 }
 
 .crypto-price {
@@ -26,6 +32,7 @@
   letter-spacing: -0.02em;
   line-height: 1.1;
   white-space: nowrap;
+  font-size: var(--price-font-size, 13.5cqw);
 }
 
 .crypto-dynamics {
@@ -35,6 +42,8 @@
   justify-content: center;
   gap: 2px;
   line-height: 1;
+  font-size: 8.5cqw;
+  margin-top: 2.5cqw;
 }
 
 .crypto-dynamics.up {

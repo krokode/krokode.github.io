@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const charCount = formattedPrice.length;
     
     // Bubble diameter expands for longer currency text strings (e.g. Rubles/CNY)
-    const minSizeForText = Math.max(120, charCount * 13.5);
+    const minSizeForText = Math.max(120, charCount * 15.5);
     
     return Math.round(Math.max(originalSize, minSizeForText));
   }
@@ -88,22 +88,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Custom HTML renderer inside bubble circles
       renderBubbleContent: (item) => {
-        const size = getBubbleSize(item);
-        
-        // Scale fonts dynamically based on diameter
-        const symbolFontSize = Math.max(9, Math.round(size * 0.095)) + 'px';
-        const priceFontSize = Math.max(12, Math.round(size * 0.145)) + 'px';
-        const dynamicsFontSize = Math.max(9, Math.round(size * 0.085)) + 'px';
-        const padding = Math.round(size * 0.06) + 'px';
+        const displayVal = item.resolvedValue ?? 0;
+        const formattedPrice = formatCurrency(displayVal, item.resolvedUnit);
+        const charCount = formattedPrice.length;
+
+        // Calculate font size in cqw dynamically based on length
+        // Max font scale is 14.5% of diameter, scaling down for longer text strings
+        const fontScaleCqw = Math.min(14.5, 150 / Math.max(8, charCount));
+        const styleAttribute = `--price-font-size: ${fontScaleCqw.toFixed(2)}cqw;`;
 
         const changePct = item.dynamics ? (item.dynamics[item.resolvedUnit] || 0) : 0;
         const isUp = changePct >= 0;
 
         return `
-          <div class="crypto-bubble-content" style="padding: ${padding};">
-            <span class="crypto-symbol" style="font-size: ${symbolFontSize}; margin-bottom: ${Math.round(size * 0.02)}px;">${item.symbol}</span>
-            <span class="crypto-price" style="font-size: ${priceFontSize};">${formatCurrency(item.resolvedValue, item.resolvedUnit)}</span>
-            <span class="crypto-dynamics ${isUp ? 'up' : 'down'}" style="font-size: ${dynamicsFontSize}; margin-top: ${Math.round(size * 0.02)}px;">
+          <div class="crypto-bubble-content" style="${styleAttribute}">
+            <span class="crypto-symbol">${item.symbol}</span>
+            <span class="crypto-price">${formattedPrice}</span>
+            <span class="crypto-dynamics ${isUp ? 'up' : 'down'}">
               ${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%
             </span>
           </div>
@@ -133,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Re-calculate minimum size based on formatted price string length
       const formattedPrice = formatCurrency(price, activeUnit);
       const charCount = formattedPrice.length;
-      const minSizeForText = Math.max(120, charCount * 13.5);
+      const minSizeForText = Math.max(120, charCount * 15.5);
 
       return Math.round(Math.max(originalSize, minSizeForText));
     };
