@@ -49,6 +49,38 @@ const BUBBLE_CAROUSEL_CONFIG = {
       "unit": "kilograms"
     },
     {
+      "id": "saturn",
+      "name": "Saturn",
+      "color": "hsl(338, 90%, 48%)",
+      "units": [
+        "mass",
+        "radius",
+        "distance",
+        "gravity"
+      ],
+      "unit": "distance",
+      "mass": 5.6846e+26,
+      "radius": 60268,
+      "distance": 1.43,
+      "gravity": 10.44,
+    },
+    {
+      "id": "moon",
+      "name": "Moon",
+      "color": "hsl(180, 7%, 62%)",
+      "units": [
+        "mass",
+        "radius",
+        "distance",
+        "gravity"
+      ],
+      "unit": "gravity",
+      "mass": 7.35e+22,
+      "radius": 1738,
+      "distance": 384400,
+      "gravity": 1.62,
+    },
+    {
       "id": "add-activity",
       "name": "Add New",
       "color": "rgba(255,255,255,0.08)",
