@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Cryptocurrency Bubble Carousel - Sandbox Preview</title>
+  
+  <!-- Premium Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  
+  <!-- Parent Stylesheets -->
+  <link rel="stylesheet" href="../bubble-carousel.css?v=2">
+  <link rel="stylesheet" href="../index.css?v=2">
+
+  <!-- Custom Stylesheet for Crypto Carousel -->
+  <link rel="stylesheet" href="./crypto-custom.css">
+</head>
+<body>
+
+  <!-- Reset/Refresh Button -->
+  <button id="reset-defaults-btn" class="theme-switcher" style="right: auto; left: 20px;">
+    <span class="material-symbols-outlined" style="font-size: 1.1rem">sync</span>
+    <span>Refresh Prices</span>
+  </button>
+
+  <!-- Theme Toggle -->
+  <button id="theme-toggle-btn" class="theme-switcher">
+    <span class="material-symbols-outlined" style="font-size: 1.1rem">light_mode</span>
+    <span id="theme-btn-text">Light Mode</span>
+  </button>
+
+  <header>
+    <h1>Crypto Bubble Carousel</h1>
+    <p>Live cryptocurrency rates & monthly volatility dynamics</p>
+  </header>
+
+  <!-- Carousel Mount Point -->
+  <div id="carousel-mount" class="dashboard-card"></div>
+
+  <div class="status-panel">
+    Tip: Click the focused bubble to cycle active fiat exchange rates.
+  </div>
+
+  <!-- Parent Carousel Logic -->
+  <script src="../bubble-carousel.js?v=2"></script>
+  
+  <!-- Custom Crypto Logic -->
+  <script src="./configHelper.js"></script>
+  <script src="./crypto-index.js"></script>
+</body>
+</html>

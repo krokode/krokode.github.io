@@ -1,0 +1,80 @@
+/* crypto-buble-example/crypto-custom.css */
+
+.crypto-bubble-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #ffffff;
+  pointer-events: none; /* Allow clicks to pass through to the bubble click handler */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.crypto-symbol {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+  line-height: 1;
+}
+
+.crypto-price {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.crypto-dynamics {
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.crypto-dynamics.up {
+  color: #00e676; /* Radiant green */
+  text-shadow: 0 0 10px rgba(0, 230, 118, 0.45);
+}
+
+.crypto-dynamics.down {
+  color: #ff1744; /* Radiant red */
+  text-shadow: 0 0 10px rgba(255, 23, 68, 0.45);
+}
+
+/* Light Theme overrides for high contrast readability */
+.light-theme .crypto-bubble-content {
+  color: #121914;
+}
+
+.light-theme .crypto-dynamics.up {
+  color: #00873a;
+  text-shadow: none;
+}
+
+.light-theme .crypto-dynamics.down {
+  color: #c51162;
+  text-shadow: none;
+}
+
+/* Ensure the custom Edit triggers are hidden */
+.custom-edit-trigger {
+  display: none !important;
+}
+
+/* Spinner Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning .material-symbols-outlined {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+

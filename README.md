@@ -253,6 +253,23 @@ Variables are encapsulated under `.bubble-carousel-widget-card`. Define these va
 
 ---
 
+## Examples
+
+### Live Cryptocurrency Dashboard (`crypto-buble-example`)
+
+A complete, live-refreshing market dashboard built on top of the core `BubbleCarousel` component.
+
+- **Location**: [crypto-buble-example/index.html]
+- **Key Implementations**:
+  - **Dynamic API Integrations**: Fetches live rates and 30d changes for BTC, ETH, USDT, USDC, DOGE, SOL, and ADA from the public CoinGecko API.
+  - **Multi-Currency Conversions**: Fully supports toggling the active focused bubble to display pricing and percentage dynamics across USD, EUR, CNY, RUB, and AED.
+  - **Caching Layer**: Implements a 5-minute client-side local cache in `localStorage` to avoid API rate limits.
+  - **Auto-Expanding Circles**: Overrides the default sizing algorithm to scale up bubble sizes dynamically when long formatted text values (such as Russian Ruble strings) are displayed to prevent text clipping.
+  - **Volatility Sizing**: Sizes the bubbles relative to monthly volatility (higher 30d price dynamics = larger bubble diameter).
+  - **Vibrant Shuffled Colors**: Allocates visually distinct HSL colors distributed evenly across the color spectrum and shuffled on load for high aesthetic appeal.
+
+---
+
 ## License
 
 This project is licensed under the MIT License:
