@@ -259,7 +259,7 @@ Variables are encapsulated under `.bubble-carousel-widget-card`. Define these va
 
 A complete, live-refreshing market dashboard built on top of the core `BubbleCarousel` component.
 
-- **Location**: [crypto-buble-example/index.html]
+- **Location**: [crypto-buble-example/index.html](file:///crypto-buble-example/index.html)
 - **Key Implementations**:
   - **Dynamic API Integrations**: Fetches live rates and 30d changes for BTC, ETH, USDT, USDC, DOGE, SOL, and ADA from the public CoinGecko API.
   - **Multi-Currency Conversions**: Fully supports toggling the active focused bubble to display pricing and percentage dynamics across USD, EUR, CNY, RUB, and AED.
