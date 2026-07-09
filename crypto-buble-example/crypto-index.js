@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         defaultIndex: 0,
         items: rawData
       },
+      autoTitle: false,
+      enableDefaultUnitCycling: false,
 
       onIndexChange: (idx) => {
         updateHeaderTitle(idx);

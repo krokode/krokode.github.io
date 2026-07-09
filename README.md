@@ -207,6 +207,17 @@ const BUBBLE_CAROUSEL_CONFIG = {
 
 ---
 
+## Center Orbit (Sun) Feature
+
+The carousel supports a central static anchor (similar to a "Sun" in a solar system) that sits stationary at the center `(0, 0, 0)` while other planet bubbles orbit around it in 3D depth space:
+- **3D Depth Simulation**: Orbiting planet bubbles with standard depth `z > 0` render in front of the Sun, while those with `z < 0` render behind it, creating a realistic orbit.
+- **Pulsing Solar Glow**: The Sun includes a custom pulsing scale animation and golden outer glow, which pauses and grows on hover for high responsiveness.
+- **Popping Foreground**: Clicking the Sun temporarily pops its depth (`zIndex = 300`) to the absolute foreground for `2` seconds before returning to its orbit midpoint.
+- **Auto-Capping Sizer**: The Sun's raw size is doubled to render it prominently, but it is automatically capped at `55%` of the container height to ensure it fits mobile screens.
+- **Enable via Schema**: Set `"centerBubbleEnabled": true` and declare the `"centerBubble"` configuration object detailing the Sun's name, units, values, and starting active unit.
+
+---
+
 ## Constructor Options
 
 When instantiating `new BubbleCarousel(selector, options)`, you can provide:
@@ -215,6 +226,9 @@ When instantiating `new BubbleCarousel(selector, options)`, you can provide:
 | :--- | :--- | :--- | :--- |
 | `configPath` | `string` | `null` | Path to load the JSON configuration file. |
 | `config` | `object` | `null` | Direct configuration object (skips network fetch). |
+| `persistKey` | `string` | `null` | If provided, automatically loads and persists state (items + center bubble) in `localStorage`. |
+| `autoTitle` | `boolean` | `true` | If true, automatically formats and updates `this.config.title` to `Name (UNIT)` on focus. |
+| `enableDefaultUnitCycling` | `boolean` | `true` | If true, clicking a focused bubble (or center bubble) cycles its active unit. |
 | `onIndexChange` | `function` | `null` | Fired when focused bubble changes: `(index) => void` |
 | `onItemClick` | `function` | `null` | Fired when a bubble is clicked: `(item, index, isFocused) => void` |
 | `renderBubbleBadge` | `function` | `null` | Render badge overlays: `(item, index, isFocused) => HTMLElement \| string` |
@@ -229,6 +243,9 @@ When instantiating `new BubbleCarousel(selector, options)`, you can provide:
 - **`setHeaderActions(node)`**: Appends a custom element (like a play/stop tracking button) to the top right of the widget header.
 - **`setOverlayContent(node)`**: Renders a custom overlay view (like an inline statistics editor form) directly covering the widget. Pass `null` to clear.
 - **`selectIndex(index)`**: Programmatically focuses a specific bubble.
+- **`cycleBubbleUnit(item, index)`**: Programmatically cycles the active unit of a bubble (orbiting or center) to the next available unit.
+- **`updateItemValue(index, newValue)`**: Updates the value of a bubble at `index` (or `'center'`) for its currently active unit, saves state, and re-renders.
+- **`resetDefaults()`**: Clears saved local storage state and reloads the page.
 - **`destroy()`**: Cleans up event listeners and disconnects resize observers.
 
 ---
