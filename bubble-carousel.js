@@ -34,6 +34,10 @@
       this.renderBubbleContent = options.renderBubbleContent || null;
       this.overlayContent = options.overlayContent || null;
 
+      this.persistKey = options.persistKey || null;
+      this.autoTitle = options.autoTitle !== undefined ? options.autoTitle : true;
+      this.enableDefaultUnitCycling = options.enableDefaultUnitCycling !== undefined ? options.enableDefaultUnitCycling : true;
+
       // Internal state
       this.currentIndex = 0;
       this.dragOffset = 0;
@@ -54,6 +58,7 @@
       // Center bubble foreground pop state
       this.centerBubbleInForeground = false;
       this.foregroundTimeoutId = null;
+      this.originalConfigTitle = '';
     }
 
     async init() {
@@ -79,7 +84,11 @@
         return;
       }
 
+      this.originalConfigTitle = this.config.title || '';
+      this.loadState();
+
       this.currentIndex = this.config.defaultIndex !== undefined ? this.config.defaultIndex : 0;
+      this.updateAutoTitle();
 
       this.buildDOM();
       this.setupResizeObserver();
@@ -212,6 +221,7 @@
 
       this.currentIndex = Math.max(0, Math.min(idx, numItems - 1));
       this.needsRebuild = true; // Focus index changed, recreate badges on the new active bubble
+      this.updateAutoTitle();
       if (this.onIndexChange) {
         this.onIndexChange(this.currentIndex);
       }
@@ -219,6 +229,8 @@
     }
 
     handleBubbleClick(item, index) {
+      const isFocused = index === this.currentIndex || index === 'center';
+
       if (index === 'center') {
         // Bring to foreground for 2 seconds
         this.centerBubbleInForeground = true;
@@ -227,13 +239,19 @@
         }
         this.foregroundTimeoutId = setTimeout(() => {
           this.centerBubbleInForeground = false;
+          this.updateAutoTitle();
           this.render();
         }, 2000);
+        this.updateAutoTitle();
         this.render();
       }
 
+      if (isFocused && this.enableDefaultUnitCycling && !item.isAddButton) {
+        this.cycleBubbleUnit(item, index);
+      }
+
       if (this.onItemClick) {
-        this.onItemClick(item, index, index === this.currentIndex || index === 'center');
+        this.onItemClick(item, index, isFocused);
       } else {
         if (index !== this.currentIndex && index !== 'center') {
           this.selectIndex(index);
@@ -587,8 +605,130 @@
       if (this.config) {
         this.config.items = newItems;
         this.needsRebuild = true; // Signal DOM refresh
+        this.updateAutoTitle();
         this.render();
       }
+    }
+
+    loadState() {
+      if (!this.persistKey) return;
+      try {
+        const savedData = localStorage.getItem(this.persistKey);
+        if (savedData) {
+          this.config.items = JSON.parse(savedData);
+        }
+        
+        if (this.config.centerBubbleEnabled && this.config.centerBubble) {
+          const savedCenterData = localStorage.getItem(this.persistKey + '_center');
+          if (savedCenterData) {
+            this.config.centerBubble = JSON.parse(savedCenterData);
+          }
+        }
+      } catch (err) {
+        console.error('BubbleCarousel: Failed to load state from localStorage:', err);
+      }
+    }
+
+    saveState() {
+      if (!this.persistKey) return;
+      try {
+        localStorage.setItem(this.persistKey, JSON.stringify(this.config.items));
+        if (this.config.centerBubbleEnabled && this.config.centerBubble) {
+          localStorage.setItem(this.persistKey + '_center', JSON.stringify(this.config.centerBubble));
+        }
+      } catch (err) {
+        console.error('BubbleCarousel: Failed to save state to localStorage:', err);
+      }
+    }
+
+    updateAutoTitle() {
+      if (!this.autoTitle || !this.config) return;
+      
+      let activeItem;
+      if (this.config.centerBubbleEnabled && this.centerBubbleInForeground) {
+        activeItem = this.config.centerBubble;
+      } else {
+        activeItem = this.config.items[this.currentIndex];
+      }
+      
+      if (activeItem && !activeItem.isAddButton) {
+        const activeUnit = activeItem.unit || '';
+        const uppercaseUnit = activeUnit ? ` (${activeUnit.toUpperCase()})` : '';
+        this.config.title = `${activeItem.name}${uppercaseUnit}`;
+      } else {
+        this.config.title = this.originalConfigTitle || "Bubbles Summary";
+      }
+    }
+
+    cycleBubbleUnit(item, index) {
+      if (!item.units || item.units.length <= 1) return;
+
+      const currentUnit = item.unit;
+      const currentIndex = item.units.indexOf(currentUnit);
+      const nextIndex = (currentIndex + 1) % item.units.length;
+      const nextUnit = item.units[nextIndex];
+
+      if (index === 'center') {
+        this.config.centerBubble = {
+          ...this.config.centerBubble,
+          unit: nextUnit
+        };
+      } else {
+        this.config.items = this.config.items.map((act, idx) => {
+          if (idx === index) {
+            return { ...act, unit: nextUnit };
+          }
+          return act;
+        });
+      }
+
+      this.saveState();
+      this.needsRebuild = true;
+      this.updateAutoTitle();
+      this.render();
+    }
+
+    updateItemValue(index, newValue) {
+      if (index === 'center') {
+        const item = this.config.centerBubble;
+        const activeUnit = item.unit;
+        if (activeUnit) {
+          this.config.centerBubble = {
+            ...this.config.centerBubble,
+            [activeUnit]: newValue
+          };
+        } else {
+          this.config.centerBubble = {
+            ...this.config.centerBubble,
+            value: newValue
+          };
+        }
+      } else {
+        this.config.items = this.config.items.map((act, idx) => {
+          if (idx === index) {
+            const activeUnit = act.unit;
+            if (activeUnit) {
+              return { ...act, [activeUnit]: newValue };
+            } else {
+              return { ...act, value: newValue };
+            }
+          }
+          return act;
+        });
+      }
+
+      this.saveState();
+      this.needsRebuild = true;
+      this.updateAutoTitle();
+      this.render();
+    }
+
+    resetDefaults() {
+      if (this.persistKey) {
+        localStorage.removeItem(this.persistKey);
+        localStorage.removeItem(this.persistKey + '_center');
+      }
+      window.location.reload();
     }
 
     destroy() {

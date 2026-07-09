@@ -2,37 +2,17 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
     let activeItemIndex = 0;
-    let rawData = [];
-
-    // Load initial items from localStorage if available, otherwise fall back to bubbleConfig.js
-    const savedData = localStorage.getItem('bubble_carousel_data');
-    const savedCenterData = localStorage.getItem('bubble_carousel_center_data');
-    const configCopy = JSON.parse(JSON.stringify(BUBBLE_CAROUSEL_CONFIG)); // Deep copy config object
-    if (savedData) {
-      try {
-        configCopy.items = JSON.parse(savedData);
-      } catch (err) {
-        console.error('Failed to parse saved bubble carousel data, resetting to defaults.', err);
-        localStorage.removeItem('bubble_carousel_data');
-      }
-    }
-    if (savedCenterData && configCopy.centerBubbleEnabled) {
-      try {
-        configCopy.centerBubble = JSON.parse(savedCenterData);
-      } catch (err) {
-        console.error('Failed to parse saved center bubble data, resetting to defaults.', err);
-        localStorage.removeItem('bubble_carousel_center_data');
-      }
-    }
 
     // 1. Instantiate the Carousel class
     const carousel = new BubbleCarousel('#carousel-mount', {
-      config: configCopy,
+      config: BUBBLE_CAROUSEL_CONFIG,
+      persistKey: 'bubble_carousel_data',
+      autoTitle: true,
+      enableDefaultUnitCycling: true,
       
       // Fired when swiped or clicked to another bubble
       onIndexChange: (idx) => {
         activeItemIndex = idx;
-        updateHeaderTitle(idx);
       },
 
       // Fired when any bubble item is clicked
@@ -40,13 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (item.isAddButton) {
           showAddBubbleOverlay();
           return;
-        }
-
-        if (isFocused) {
-          // Cycle metrics modes on clicking the active focused bubble
-          cycleBubbleUnit(item, index);
-        } else {
-          carousel.selectIndex(index);
         }
       },
 
@@ -72,10 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize the carousel
     await carousel.init();
-    rawData = carousel.config.items;
-    
-    // Set initial header title
-    updateHeaderTitle(carousel.currentIndex);
+    activeItemIndex = carousel.currentIndex;
 
     // Render custom header Start/Stop button
     const startStopBtn = document.createElement('button');
@@ -94,50 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     carousel.setHeaderActions(startStopBtn);
 
-    // Cycle specific bubble's active unit
-    function cycleBubbleUnit(item, index) {
-      if (!item.units || item.units.length <= 1) return;
-
-      const currentUnit = item.unit;
-      const currentIndex = item.units.indexOf(currentUnit);
-      const nextIndex = (currentIndex + 1) % item.units.length;
-      const nextUnit = item.units[nextIndex];
-
-      if (index === 'center') {
-        carousel.config.centerBubble = {
-          ...carousel.config.centerBubble,
-          unit: nextUnit
-        };
-        localStorage.setItem('bubble_carousel_center_data', JSON.stringify(carousel.config.centerBubble));
-      } else {
-        rawData = rawData.map((act, idx) => {
-          if (idx === index) {
-            return { ...act, unit: nextUnit };
-          }
-          return act;
-        });
-
-        // Save unit changes to localStorage
-        localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
-      }
-
-      carousel.updateItems(rawData);
-      updateHeaderTitle(index);
-    }
-
-    // Dynamic header title update based on focused bubble unit
-    function updateHeaderTitle(idx) {
-      const activeItem = idx === 'center' ? carousel.config.centerBubble : rawData[idx];
-      if (activeItem && !activeItem.isAddButton) {
-        const activeUnit = activeItem.unit || '';
-        const uppercaseUnit = activeUnit ? ` (${activeUnit.toUpperCase()})` : '';
-        carousel.config.title = `${activeItem.name}${uppercaseUnit}`;
-      } else {
-        carousel.config.title = BUBBLE_CAROUSEL_CONFIG.title || "Bubbles Summary";
-      }
-      carousel.render();
-    }
-
     // Show Inline Editor Panel in overlay slot
     function showInlineEditor(item, index) {
       // Pass helper properties (resolvedValue and resolvedUnit) to the stats editor
@@ -152,41 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         tempItem,
         index,
         (newVal) => {
-          // Save callback: save to the dynamic key corresponding to active unit
-          if (index === 'center') {
-            const activeUnit = carousel.config.centerBubble.unit;
-            if (activeUnit) {
-              carousel.config.centerBubble = {
-                ...carousel.config.centerBubble,
-                [activeUnit]: newVal
-              };
-            } else {
-              carousel.config.centerBubble = {
-                ...carousel.config.centerBubble,
-                value: newVal
-              };
-            }
-            localStorage.setItem('bubble_carousel_center_data', JSON.stringify(carousel.config.centerBubble));
-          } else {
-            rawData = rawData.map((act, idx) => {
-              if (idx === index) {
-                const activeUnit = act.unit;
-                if (activeUnit) {
-                  return { ...act, [activeUnit]: newVal };
-                } else {
-                  return { ...act, value: newVal };
-                }
-              }
-              return act;
-            });
-            
-            // Save value changes to localStorage
-            localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
-          }
-
+          // Save callback
+          carousel.updateItemValue(index, newVal);
           carousel.setOverlayContent(null);
-          carousel.updateItems(rawData);
-          updateHeaderTitle(index);
         },
         () => {
           // Cancel callback
@@ -195,17 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         index === 'center' ? null : () => {
           // Delete callback
           if (confirm(`Delete the "${item.name}" bubble and all its associated data?`)) {
-            // Remove from rawData
-            rawData = rawData.filter((_, idx) => idx !== index);
-            
-            // Save changes to localStorage
-            localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
-
+            // Remove from items
+            carousel.config.items = carousel.config.items.filter((_, idx) => idx !== index);
+            carousel.saveState();
             carousel.setOverlayContent(null);
-            carousel.updateItems(rawData);
+            carousel.updateItems(carousel.config.items);
             
             // Select next valid index so carousel focus behaves correctly
-            const nextIndex = Math.min(index, rawData.length - 2); // -2 ignores Add Button at end
+            const nextIndex = Math.min(index, carousel.config.items.length - 2); // -2 ignores Add Button at end
             carousel.selectIndex(Math.max(0, nextIndex));
           }
         }
@@ -216,18 +107,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show Add Bubble Panel in overlay slot
     function showAddBubbleOverlay() {
+      const items = carousel.config.items;
       const overlayNode = AddBubble.create(
-        rawData,
+        items,
         (newBubble) => {
-          // Save callback: add new item to rawData (place it right before the "Add New" button)
-          const insertIndex = rawData.length - 1;
-          rawData.splice(insertIndex, 0, newBubble);
+          // Save callback: add new item to items (place it right before the "Add New" button)
+          const insertIndex = items.length - 1;
+          items.splice(insertIndex, 0, newBubble);
 
-          // Save changes to localStorage
-          localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
-
+          carousel.saveState();
           carousel.setOverlayContent(null);
-          carousel.updateItems(rawData);
+          carousel.updateItems(items);
           
           // Focus the newly added bubble
           carousel.selectIndex(insertIndex);
@@ -246,9 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (resetDefaultsBtn) {
       resetDefaultsBtn.addEventListener('click', () => {
         if (confirm('Revert all values to bubbleConfig.js defaults?')) {
-          localStorage.removeItem('bubble_carousel_data');
-          localStorage.removeItem('bubble_carousel_center_data');
-          window.location.reload();
+          carousel.resetDefaults();
         }
       });
     }
