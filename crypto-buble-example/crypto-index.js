@@ -31,28 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     return formatter.format(val);
   }
 
-  // Re-calculate bubble size for font scaling inside renderBubbleContent
-  function getBubbleSize(item) {
-    const baseBubbleSize = 120;
-    const maxGrowth = 50;
-    const displayVal = item.resolvedValue ?? 0;
-    const valNum = Math.abs(Number(displayVal)) || 0;
-    
-    const displayGoal = item.goals ? item.goals[item.resolvedUnit] : item.goal;
-    let ratio = displayGoal > 0 ? (valNum / displayGoal) : 0.6;
-    ratio = Math.max(0, Math.min(ratio, 1.5));
-    const originalSize = Math.round(baseBubbleSize + ratio * maxGrowth);
-
-    // Calculate characters in formatted text to expand size if necessary
-    const formattedPrice = formatCurrency(displayVal, item.resolvedUnit);
-    const charCount = formattedPrice.length;
-    
-    // Bubble diameter expands for longer currency text strings (e.g. Rubles/CNY)
-    const minSizeForText = Math.max(120, charCount * 15.5);
-    
-    return Math.round(Math.max(originalSize, minSizeForText));
-  }
-
   try {
     // 2. Fetch data from CoinGecko
     const fetchedItems = await CryptoConfigHelper.fetchCryptoData();
@@ -87,24 +65,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
 
       // Custom HTML renderer inside bubble circles
-      renderBubbleContent: (item) => {
+      renderBubbleContent: (item, isFocused, dynamicSize) => {
         const displayVal = item.resolvedValue ?? 0;
         const formattedPrice = formatCurrency(displayVal, item.resolvedUnit);
         const charCount = formattedPrice.length;
 
-        // Calculate font size in cqw dynamically based on length
-        // Max font scale is 14.5% of diameter, scaling down for longer text strings
-        const fontScaleCqw = Math.min(14.5, 150 / Math.max(8, charCount));
-        const styleAttribute = `--price-font-size: ${fontScaleCqw.toFixed(2)}cqw;`;
+        // Use dynamicSize passed from the root component to calculate absolute pixel font sizes
+        // Max font scale is 14.5% of dynamicSize, scaling down for longer text strings
+        const fontScale = Math.min(0.145, 1.5 / Math.max(8, charCount));
+        
+        const symbolFontSize = Math.max(9, Math.round(dynamicSize * 0.095)) + 'px';
+        const priceFontSize = Math.max(11, Math.round(dynamicSize * fontScale)) + 'px';
+        const dynamicsFontSize = Math.max(9, Math.round(dynamicSize * 0.085)) + 'px';
+        const padding = Math.round(dynamicSize * 0.06) + 'px';
 
         const changePct = item.dynamics ? (item.dynamics[item.resolvedUnit] || 0) : 0;
         const isUp = changePct >= 0;
 
         return `
-          <div class="crypto-bubble-content" style="${styleAttribute}">
-            <span class="crypto-symbol">${item.symbol}</span>
-            <span class="crypto-price">${formattedPrice}</span>
-            <span class="crypto-dynamics ${isUp ? 'up' : 'down'}">
+          <div class="crypto-bubble-content" style="padding: ${padding};">
+            <span class="crypto-symbol" style="font-size: ${symbolFontSize}; margin-bottom: ${Math.round(dynamicSize * 0.02)}px;">${item.symbol}</span>
+            <span class="crypto-price" style="font-size: ${priceFontSize};">${formattedPrice}</span>
+            <span class="crypto-dynamics ${isUp ? 'up' : 'down'}" style="font-size: ${dynamicsFontSize}; margin-top: ${Math.round(dynamicSize * 0.02)}px;">
               ${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%
             </span>
           </div>

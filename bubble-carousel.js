@@ -311,7 +311,7 @@
 
         // Bubble content rendering
         if (this.renderBubbleContent) {
-          const customContent = this.renderBubbleContent(item, index === this.currentIndex);
+          const customContent = this.renderBubbleContent(item, index === this.currentIndex, dynamicSize);
           if (typeof customContent === 'string') {
             circle.innerHTML = customContent;
           } else if (customContent instanceof HTMLElement) {
