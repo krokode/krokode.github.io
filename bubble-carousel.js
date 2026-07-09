@@ -50,6 +50,10 @@
       // Bound functions for global listener removal
       this.globalMouseMove = null;
       this.globalMouseUp = null;
+
+      // Center bubble foreground pop state
+      this.centerBubbleInForeground = false;
+      this.foregroundTimeoutId = null;
     }
 
     async init() {
@@ -215,10 +219,23 @@
     }
 
     handleBubbleClick(item, index) {
+      if (index === 'center') {
+        // Bring to foreground for 2 seconds
+        this.centerBubbleInForeground = true;
+        if (this.foregroundTimeoutId) {
+          clearTimeout(this.foregroundTimeoutId);
+        }
+        this.foregroundTimeoutId = setTimeout(() => {
+          this.centerBubbleInForeground = false;
+          this.render();
+        }, 2000);
+        this.render();
+      }
+
       if (this.onItemClick) {
-        this.onItemClick(item, index, index === this.currentIndex);
+        this.onItemClick(item, index, index === this.currentIndex || index === 'center');
       } else {
-        if (index !== this.currentIndex) {
+        if (index !== this.currentIndex && index !== 'center') {
           this.selectIndex(index);
         }
       }
@@ -288,12 +305,11 @@
           this.handleBubbleClick(item, index);
         });
 
-        // Label above bubble
+        // Label element (rendered below circle)
         const label = document.createElement('div');
         label.className = 'bubble-label';
         label.style.color = item.isAddButton ? 'var(--add-bubble-text)' : (item.labelColor || item.color);
         label.textContent = item.name;
-        bubbleWrapper.appendChild(label);
 
         // Bubble circle element
         const circle = document.createElement('div');
@@ -371,8 +387,103 @@
         }
 
         bubbleWrapper.appendChild(circle);
+        bubbleWrapper.appendChild(label);
         this.bubblesWrapper.appendChild(bubbleWrapper);
       });
+
+      // Render center bubble if configured and enabled
+      if (this.config.centerBubbleEnabled && this.config.centerBubble) {
+        const item = this.config.centerBubble;
+        const activeUnit = item.unit || '';
+        const resolvedVal = (activeUnit && item[activeUnit] !== undefined) ? item[activeUnit] : (item.value ?? 0);
+
+        item.resolvedValue = resolvedVal;
+        item.resolvedUnit = activeUnit || item.unit || '';
+
+        const rawSize = this.calculateBubbleSize(item) * 2;
+        const maxCircleSize = Math.max(100, Math.round(this.containerHeight * 0.55));
+        const dynamicSize = Math.min(Math.round(rawSize * bubbleScaleFactor), maxCircleSize);
+
+        const bubbleWrapper = document.createElement('div');
+        bubbleWrapper.className = 'activity-bubble-wrapper center-bubble';
+        bubbleWrapper.setAttribute('data-index', 'center');
+        bubbleWrapper.style.width = `${dynamicSize}px`;
+        bubbleWrapper.style.height = `${dynamicSize + 30}px`;
+
+        bubbleWrapper.addEventListener('click', (e) => {
+          if (this.dragActive) return;
+          this.handleBubbleClick(item, 'center');
+        });
+
+        const label = document.createElement('div');
+        label.className = 'bubble-label';
+        label.style.color = item.labelColor || item.color;
+        label.textContent = item.name;
+        bubbleWrapper.appendChild(label);
+
+        const circle = document.createElement('div');
+        circle.className = 'bubble-circle';
+
+        circle.style.background = item.color;
+        circle.style.width = `${dynamicSize}px`;
+        circle.style.height = `${dynamicSize}px`;
+        circle.style.color = item.textColor || 'inherit';
+        circle.style.position = 'relative';
+
+        if (this.renderBubbleContent) {
+          const customContent = this.renderBubbleContent(item, true, dynamicSize);
+          if (typeof customContent === 'string') {
+            circle.innerHTML = customContent;
+          } else if (customContent instanceof HTMLElement) {
+            circle.appendChild(customContent);
+          }
+        } else {
+          const displayVal = formatScientific(resolvedVal);
+          const charCount = displayVal.length;
+
+          let valFontSize;
+          if (charCount <= 2) {
+            valFontSize = Math.round(dynamicSize * 0.28);
+          } else if (charCount <= 4) {
+            valFontSize = Math.round(dynamicSize * 0.23);
+          } else if (charCount <= 6) {
+            valFontSize = Math.round(dynamicSize * 0.18);
+          } else {
+            valFontSize = Math.round(dynamicSize * 0.14);
+          }
+
+          const valSpan = document.createElement('span');
+          valSpan.className = 'bubble-val';
+          valSpan.style.fontSize = `${valFontSize}px`;
+          valSpan.textContent = displayVal;
+          circle.appendChild(valSpan);
+
+          const displayUnit = activeUnit || item.unit || '';
+          if (displayUnit) {
+            const unitSpan = document.createElement('span');
+            unitSpan.className = 'bubble-unit';
+            unitSpan.style.fontSize = `${Math.round(dynamicSize * 0.11)}px`;
+            unitSpan.textContent = displayUnit;
+            circle.appendChild(unitSpan);
+          }
+        }
+
+        if (this.renderBubbleBadge) {
+          const badgeNode = this.renderBubbleBadge(item, 'center', true);
+          if (badgeNode) {
+            if (typeof badgeNode === 'string') {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = badgeNode;
+              circle.appendChild(tempDiv.firstElementChild);
+            } else if (badgeNode instanceof HTMLElement) {
+              circle.appendChild(badgeNode);
+            }
+          }
+        }
+
+        bubbleWrapper.appendChild(circle);
+        this.bubblesWrapper.appendChild(bubbleWrapper);
+      }
     }
 
     render() {
@@ -389,13 +500,23 @@
       }
 
       // 2. Perform style updates only (high-performance rendering during drags)
-      const radiusX = this.config.radiusX ?? Math.max(130, Math.min(this.containerWidth * 0.36, 320));
+      const radiusX = this.config.radiusX ?? Math.max(130, Math.min(this.containerWidth * 0.36, 750));
       const radiusY = this.config.radiusY ?? Math.max(30, Math.min(this.containerHeight * 0.22, 120));
 
       const bubbleWrappers = this.bubblesWrapper.querySelectorAll('.activity-bubble-wrapper');
 
       bubbleWrappers.forEach((bubbleWrapper) => {
-        const index = parseInt(bubbleWrapper.getAttribute('data-index'), 10);
+        const indexAttr = bubbleWrapper.getAttribute('data-index');
+        if (indexAttr === 'center') {
+          bubbleWrapper.style.transform = 'translate3d(0, 0, 0) scale(1.1)';
+          bubbleWrapper.style.opacity = '1';
+          bubbleWrapper.style.zIndex = this.centerBubbleInForeground ? '300' : '100';
+          bubbleWrapper.style.cursor = 'pointer';
+          bubbleWrapper.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease';
+          return;
+        }
+
+        const index = parseInt(indexAttr, 10);
         const offsetIndex = index - (this.currentIndex + this.dragOffset);
         const normalizedOffset = offsetIndex < -numItems / 2 ? offsetIndex + numItems : offsetIndex > numItems / 2 ? offsetIndex - numItems : offsetIndex;
 

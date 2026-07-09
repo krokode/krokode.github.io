@@ -5,6 +5,17 @@ const BUBBLE_CAROUSEL_CONFIG = {
   "baseBubbleSize": 120,
   "maxGrowth": 50,
   "defaultIndex": 0,
+  "centerBubbleEnabled": true,
+  "centerBubble": {
+    "id": "sun",
+    "name": "Sun",
+    "color": "oklch(78% 0.23 85)",
+    "units": ["luminosity", "temperature", "mass"],
+    "luminosity": 3.828e26,
+    "temperature": 5778,
+    "mass": 1.989e30,
+    "unit": "luminosity"
+  },
   "items": [
     {
       "id": "lime_green",

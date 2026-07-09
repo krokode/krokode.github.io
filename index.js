@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load initial items from localStorage if available, otherwise fall back to bubbleConfig.js
     const savedData = localStorage.getItem('bubble_carousel_data');
+    const savedCenterData = localStorage.getItem('bubble_carousel_center_data');
     const configCopy = JSON.parse(JSON.stringify(BUBBLE_CAROUSEL_CONFIG)); // Deep copy config object
     if (savedData) {
       try {
@@ -13,6 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) {
         console.error('Failed to parse saved bubble carousel data, resetting to defaults.', err);
         localStorage.removeItem('bubble_carousel_data');
+      }
+    }
+    if (savedCenterData && configCopy.centerBubbleEnabled) {
+      try {
+        configCopy.centerBubble = JSON.parse(savedCenterData);
+      } catch (err) {
+        console.error('Failed to parse saved center bubble data, resetting to defaults.', err);
+        localStorage.removeItem('bubble_carousel_center_data');
       }
     }
 
@@ -46,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isFocused && !item.isAddButton) {
           const btn = document.createElement('span');
           btn.className = 'material-symbols-outlined custom-edit-trigger';
+          if (index === 'center') {
+            btn.classList.add('center-edit-trigger');
+          }
           btn.textContent = 'edit';
           btn.title = `Edit ${item.name} Value`;
           btn.addEventListener('click', (e) => {
@@ -91,15 +103,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nextIndex = (currentIndex + 1) % item.units.length;
       const nextUnit = item.units[nextIndex];
 
-      rawData = rawData.map((act, idx) => {
-        if (idx === index) {
-          return { ...act, unit: nextUnit };
-        }
-        return act;
-      });
+      if (index === 'center') {
+        carousel.config.centerBubble = {
+          ...carousel.config.centerBubble,
+          unit: nextUnit
+        };
+        localStorage.setItem('bubble_carousel_center_data', JSON.stringify(carousel.config.centerBubble));
+      } else {
+        rawData = rawData.map((act, idx) => {
+          if (idx === index) {
+            return { ...act, unit: nextUnit };
+          }
+          return act;
+        });
 
-      // Save unit changes to localStorage
-      localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
+        // Save unit changes to localStorage
+        localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
+      }
 
       carousel.updateItems(rawData);
       updateHeaderTitle(index);
@@ -107,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Dynamic header title update based on focused bubble unit
     function updateHeaderTitle(idx) {
-      const activeItem = rawData[idx];
+      const activeItem = idx === 'center' ? carousel.config.centerBubble : rawData[idx];
       if (activeItem && !activeItem.isAddButton) {
         const activeUnit = activeItem.unit || '';
         const uppercaseUnit = activeUnit ? ` (${activeUnit.toUpperCase()})` : '';
@@ -133,29 +153,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         index,
         (newVal) => {
           // Save callback: save to the dynamic key corresponding to active unit
-          rawData = rawData.map((act, idx) => {
-            if (idx === index) {
-              const activeUnit = act.unit;
-              if (activeUnit) {
-                return { ...act, [activeUnit]: newVal };
-              } else {
-                return { ...act, value: newVal };
-              }
+          if (index === 'center') {
+            const activeUnit = carousel.config.centerBubble.unit;
+            if (activeUnit) {
+              carousel.config.centerBubble = {
+                ...carousel.config.centerBubble,
+                [activeUnit]: newVal
+              };
+            } else {
+              carousel.config.centerBubble = {
+                ...carousel.config.centerBubble,
+                value: newVal
+              };
             }
-            return act;
-          });
-          
-          // Save value changes to localStorage
-          localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
+            localStorage.setItem('bubble_carousel_center_data', JSON.stringify(carousel.config.centerBubble));
+          } else {
+            rawData = rawData.map((act, idx) => {
+              if (idx === index) {
+                const activeUnit = act.unit;
+                if (activeUnit) {
+                  return { ...act, [activeUnit]: newVal };
+                } else {
+                  return { ...act, value: newVal };
+                }
+              }
+              return act;
+            });
+            
+            // Save value changes to localStorage
+            localStorage.setItem('bubble_carousel_data', JSON.stringify(rawData));
+          }
 
           carousel.setOverlayContent(null);
           carousel.updateItems(rawData);
+          updateHeaderTitle(index);
         },
         () => {
           // Cancel callback
           carousel.setOverlayContent(null);
         },
-        () => {
+        index === 'center' ? null : () => {
           // Delete callback
           if (confirm(`Delete the "${item.name}" bubble and all its associated data?`)) {
             // Remove from rawData
@@ -210,6 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       resetDefaultsBtn.addEventListener('click', () => {
         if (confirm('Revert all values to bubbleConfig.js defaults?')) {
           localStorage.removeItem('bubble_carousel_data');
+          localStorage.removeItem('bubble_carousel_center_data');
           window.location.reload();
         }
       });
