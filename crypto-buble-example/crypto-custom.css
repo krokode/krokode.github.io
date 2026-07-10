@@ -35,6 +35,18 @@
   justify-content: center;
   gap: 2px;
   line-height: 1;
+
+  /* Pill styling */
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(2px);
+}
+
+.light-theme .crypto-dynamics {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .crypto-dynamics.up {
