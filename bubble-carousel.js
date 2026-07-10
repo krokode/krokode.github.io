@@ -641,6 +641,18 @@
       }
     }
 
+    updateTitle(newTitle) {
+      if (this.config) {
+        this.config.title = newTitle;
+      }
+      if (this.container) {
+        const titleEl = this.container.querySelector('.widget-title');
+        if (titleEl) {
+          titleEl.textContent = newTitle;
+        }
+      }
+    }
+
     updateAutoTitle() {
       if (!this.autoTitle || !this.config) return;
       
@@ -654,9 +666,9 @@
       if (activeItem && !activeItem.isAddButton) {
         const activeUnit = activeItem.unit || '';
         const uppercaseUnit = activeUnit ? ` (${activeUnit.toUpperCase()})` : '';
-        this.config.title = `${activeItem.name}${uppercaseUnit}`;
+        this.updateTitle(`${activeItem.name}${uppercaseUnit}`);
       } else {
-        this.config.title = this.originalConfigTitle || "Bubbles Summary";
+        this.updateTitle(this.originalConfigTitle || "Bubbles Summary");
       }
     }
 

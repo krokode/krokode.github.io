@@ -221,14 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       titleText = `${activeItem.name} (${activeItem.symbol}) in ${activeUnit.toUpperCase()}`;
     }
     
-    carousel.config.title = titleText;
-    
-    // Directly update the DOM title text
-    const titleEl = container.querySelector('.widget-title');
-    if (titleEl) {
-      titleEl.textContent = titleText;
-    }
-    
+    carousel.updateTitle(titleText);
     carousel.render();
   }
 });
