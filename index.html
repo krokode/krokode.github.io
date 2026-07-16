@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D Planetary Bubble Carousel - Sandbox Preview</title>
   <link rel="icon" type="image/png" href="./favicon_3d.png">
-  
+
   <!-- Premium Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Outfit:wght@500;700;900&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+
   <!-- Carousel Stylesheet -->
   <link rel="stylesheet" href="./bubble-carousel.css?v=2">
 
@@ -25,6 +30,7 @@
   <link rel="stylesheet" href="./add-bubble.css?v=2">
 
 </head>
+
 <body>
 
   <!-- Reset Defaults -->
@@ -39,15 +45,22 @@
     <span id="theme-btn-text">Light Mode</span>
   </button>
 
-  <header>
-    <h1>3D Bubble Carousel</h1>
-    <p>Modular Vanilla HTML/CSS/JS Component Sandbox</p>
-    <p style="margin-top: 0.75rem;">
-      <a href="./crypto-buble-example/index.html" style="color: oklch(76% 0.25 142); text-decoration: none; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.3rem;">
-        <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle;">monetization_on</span>
-        Crypto Bubble Example
+  <header class="sandbox-header">
+    <div class="header-logo">
+      <span class="material-symbols-outlined logo-icon">bubble_chart</span>
+      <h1>3D Bubble Carousel</h1>
+    </div>
+    <p class="subtitle">Modular Vanilla HTML/CSS/JS Component Sandbox</p>
+    <nav class="header-nav">
+      <a href="./crypto-buble-example/index.html" class="nav-pill crypto-pill">
+        <span class="material-symbols-outlined">monetization_on</span>
+        <span>Crypto Example</span>
       </a>
-    </p>
+      <a href="./weather-bubble-example-frompackage/index.html" class="nav-pill weather-pill">
+        <span class="material-symbols-outlined">partly_cloudy_day</span>
+        <span>Weather Example</span>
+      </a>
+    </nav>
   </header>
 
   <!-- Carousel Dashboard Card Container -->
@@ -68,4 +81,5 @@
   <!-- Index Script -->
   <script src="./index.js?v=2"></script>
 </body>
+
 </html>

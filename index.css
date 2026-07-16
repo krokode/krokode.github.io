@@ -21,32 +21,148 @@ body.light {
     color: #121914;
 }
 
-header {
+.sandbox-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
     margin-top: 3rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
-header h1 {
+.header-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.logo-icon {
+    font-size: 2.4rem;
+    background: linear-gradient(135deg, oklch(76% 0.25 142) 0%, oklch(76% 0.15 190) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: float-bubble 4s ease-in-out infinite alternate;
+}
+
+@keyframes float-bubble {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-4px) scale(1.05); }
+}
+
+.sandbox-header h1 {
     font-family: 'Outfit', sans-serif;
     font-size: 2.2rem;
     font-weight: 900;
     letter-spacing: -0.02em;
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     background: linear-gradient(135deg, oklch(76% 0.25 142) 0%, oklch(76% 0.15 190) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-header p {
+.sandbox-header .subtitle {
     color: #8fa095;
     font-size: 0.95rem;
     margin: 0;
     transition: color 0.3s ease;
 }
 
-body.light header p {
+body.light .sandbox-header .subtitle {
     color: #58695d;
+}
+
+/* Premium Capsule Navigation Pill Styles */
+.header-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding: 0.4rem;
+    background: rgba(18, 25, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+body.light .header-nav {
+    background: rgba(245, 247, 246, 0.7);
+    border-color: rgba(18, 25, 20, 0.08);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.02), 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+.nav-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: #8fa095;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid transparent;
+}
+
+body.light .nav-pill {
+    color: #58695d;
+}
+
+.nav-pill span.material-symbols-outlined {
+    font-size: 1.15rem;
+    transition: transform 0.3s ease;
+}
+
+/* Hover effects */
+.nav-pill:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.light .nav-pill:hover {
+    color: #121914;
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.nav-pill:hover span.material-symbols-outlined {
+    transform: scale(1.15) rotate(10deg);
+}
+
+/* Specific Pill Stylings for Premium look */
+.crypto-pill span.material-symbols-outlined {
+    color: #ffb020; /* crypto gold */
+}
+
+.weather-pill span.material-symbols-outlined {
+    color: #00d2ff; /* weather blue */
+}
+
+/* Hover highlights to make them feel responsive and alive */
+.crypto-pill:hover {
+    background: rgba(255, 176, 32, 0.1);
+    border-color: rgba(255, 176, 32, 0.25);
+}
+
+body.light .crypto-pill:hover {
+    background: rgba(255, 176, 32, 0.08);
+    border-color: rgba(255, 176, 32, 0.18);
+}
+
+.weather-pill:hover {
+    background: rgba(0, 210, 255, 0.1);
+    border-color: rgba(0, 210, 255, 0.25);
+}
+
+body.light .weather-pill:hover {
+    background: rgba(0, 210, 255, 0.08);
+    border-color: rgba(0, 210, 255, 0.18);
 }
 
 /* Theme Toggle Button Style */
