@@ -1,0 +1,27 @@
+{
+  "name": "3d-bubble-carousel",
+  "version": "1.0.0",
+  "description": "A standalone 3D Planet Bubble Carousel widget with support for add, edit, and custom metrics visualization.",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./bubble-carousel": "./src/bubble-carousel.js",
+    "./add-bubble": "./src/add-bubble.js",
+    "./stats-editor": "./src/stats-editor.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "type": "module",
+  "keywords": [
+    "3d",
+    "carousel",
+    "bubble",
+    "planetary",
+    "html5"
+  ],
+  "author": "Yudayev Team",
+  "license": "MIT"
+}

@@ -232,7 +232,8 @@ When instantiating `new BubbleCarousel(selector, options)`, you can provide:
 | `onIndexChange` | `function` | `null` | Fired when focused bubble changes: `(index) => void` |
 | `onItemClick` | `function` | `null` | Fired when a bubble is clicked: `(item, index, isFocused) => void` |
 | `renderBubbleBadge` | `function` | `null` | Render badge overlays: `(item, index, isFocused) => HTMLElement \| string` |
-| `renderBubbleContent` | `function` | `null` | Custom bubble inside content: `(item, isFocused) => HTMLElement \| string` |
+| `renderBubbleContent` | `function` | `null` | Custom bubble inside content: `(item, isFocused, dynamicSize) => HTMLElement \| string` |
+| `renderBubbleTooltip` | `function` | `null` | Render custom tooltip on hover: `(item) => HTMLElement \| string` |
 
 ---
 
@@ -284,6 +285,18 @@ A complete, live-refreshing market dashboard built on top of the core `BubbleCar
   - **Auto-Expanding Circles**: Overrides the default sizing algorithm to scale up bubble sizes dynamically when long formatted text values (such as Russian Ruble strings) are displayed to prevent text clipping.
   - **Volatility Sizing**: Sizes the bubbles relative to monthly volatility (higher 30d price dynamics = larger bubble diameter).
   - **Vibrant Shuffled Colors**: Allocates visually distinct HSL colors distributed evenly across the color spectrum and shuffled on load for high aesthetic appeal.
+
+### Live Weather Carousel (`weather-bubble-example-frompackage`)
+
+An interactive 3D weather bubble carousel showing live weather information for major world cities using the Open-Meteo API.
+
+- **Location**: [weather-bubble-example-frompackage/index.html](file:///c:/Users/Admin/Learn%20Projects/3DBubbleCarousel/weather-bubble-example-frompackage/index.html)
+- **Key Implementations**:
+  - **Live Weather Integration**: Fetches real-time weather details (celsius, fahrenheit, pressure, wind speed, visibility, humidity, air quality, uv index) from the free Open-Meteo API.
+  - **Ticking Sun Clock & Tri-Unit cycling**: The static center Sun bubble displays local date, local ticking clock (updating every second), or UV index of the active city, cycling between them on click.
+  - **Dynamic Sun Colors**: The Sun color changes depending on sunrise/sunset times of the selected city (Daytime Golden Yellow, Twilight Indigo, or Golden Hour Sunset Orange).
+  - **Clean Typography-focused Bubbles**: Emojis are removed from the bubbles themselves, resulting in a cleaner typography design.
+  - **Automated Geocoding Modal**: Users can search and add any city directly via UI (resolving coordinates and local timezone using the Open-Meteo Geocoding API automatically).
 
 ---
 
