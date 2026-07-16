@@ -1,6 +1,6 @@
 // 3DBubbleCarousel/bubble-carousel.js
 
-(() => {
+// IIFE removed for ESM exports
   const DIGITS_TO_SUPERSCRIPT = {
     '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
     '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
@@ -831,12 +831,17 @@
     }
   }
 
-  // Export for ES modules, fallback to global for direct script inclusion
+  const globalScope = typeof globalThis !== 'undefined' ? globalThis : window;
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = BubbleCarousel;
   } else if (typeof exports !== 'undefined') {
     exports.BubbleCarousel = BubbleCarousel;
-  } else {
-    window.BubbleCarousel = BubbleCarousel;
   }
-})();
+
+  if (globalScope) {
+    globalScope.BubbleCarousel = BubbleCarousel;
+  }
+
+export { BubbleCarousel };
+export default BubbleCarousel;
