@@ -290,7 +290,7 @@ A complete, live-refreshing market dashboard built on top of the core `BubbleCar
 
 An interactive 3D weather bubble carousel showing live weather information for major world cities using the Open-Meteo API.
 
-- **Location**: [weather-bubble-example-frompackage/index.html](file:///c:/Users/Admin/Learn%20Projects/3DBubbleCarousel/weather-bubble-example-frompackage/index.html)
+- **Location**: [weather-bubble-example-frompackage/index.html](https://krokode.github.io//weather-bubble-example-frompackage/index.html)
 - **Key Implementations**:
   - **Live Weather Integration**: Fetches real-time weather details (celsius, fahrenheit, pressure, wind speed, visibility, humidity, air quality, uv index) from the free Open-Meteo API.
   - **Ticking Sun Clock & Tri-Unit cycling**: The static center Sun bubble displays local date, local ticking clock (updating every second), or UV index of the active city, cycling between them on click.
