@@ -676,12 +676,154 @@
     }
 
     updateItems(newItems) {
-      if (this.config) {
-        this.config.items = newItems;
-        this.needsRebuild = true; // Signal DOM refresh
+      if (!this.config) return;
+
+      const prevItems = this.config.items || [];
+      let structureChanged = prevItems.length !== newItems.length;
+      if (!structureChanged) {
+        for (let i = 0; i < newItems.length; i++) {
+          if (prevItems[i].id !== newItems[i].id || 
+              prevItems[i].name !== newItems[i].name || 
+              prevItems[i].color !== newItems[i].color ||
+              prevItems[i].unit !== newItems[i].unit) {
+            structureChanged = true;
+            break;
+          }
+        }
+      }
+
+      this.config.items = newItems;
+
+      if (structureChanged) {
+        this.needsRebuild = true;
+        this.updateAutoTitle();
+        this.render();
+      } else {
+        this.updateBubbleValuesAndSizes();
         this.updateAutoTitle();
         this.render();
       }
+    }
+
+    updateBubbleValuesAndSizes() {
+      if (!this.bubblesWrapper || !this.config || !this.config.items) return;
+
+      const items = this.config.items;
+      const bubbleScaleFactor = this.config.bubbleScaleFactor ?? Math.min(1.0, Math.max(0.45, this.containerHeight / 350));
+      const bubbleWrappers = this.bubblesWrapper.querySelectorAll('.activity-bubble-wrapper');
+
+      bubbleWrappers.forEach((bubbleWrapper) => {
+        const indexAttr = bubbleWrapper.getAttribute('data-index');
+        if (indexAttr === 'center') {
+          const item = this.config.centerBubble;
+          if (item) {
+            const activeUnit = item.unit || '';
+            const resolvedVal = (activeUnit && item[activeUnit] !== undefined) ? item[activeUnit] : (item.value ?? 0);
+            item.resolvedValue = resolvedVal;
+            item.resolvedUnit = activeUnit || item.unit || '';
+
+            const circle = bubbleWrapper.querySelector('.bubble-circle');
+            if (circle) {
+              const rawSize = this.calculateBubbleSize(item) * 2;
+              const maxCircleSize = Math.max(100, Math.round(this.containerHeight * 0.55));
+              const dynamicSize = Math.min(Math.round(rawSize * bubbleScaleFactor), maxCircleSize);
+
+              circle.style.width = `${dynamicSize}px`;
+              circle.style.height = `${dynamicSize}px`;
+
+              bubbleWrapper.style.width = `${dynamicSize}px`;
+              bubbleWrapper.style.height = `${dynamicSize + 30}px`;
+
+              if (this.renderBubbleContent) {
+                const customContent = this.renderBubbleContent(item, true, dynamicSize);
+                if (typeof customContent === 'string') {
+                  circle.innerHTML = customContent;
+                } else if (customContent instanceof HTMLElement) {
+                  circle.innerHTML = '';
+                  circle.appendChild(customContent);
+                }
+              } else {
+                const valEl = circle.querySelector('.bubble-val');
+                if (valEl) {
+                  const displayVal = formatScientific(resolvedVal);
+                  valEl.textContent = displayVal;
+                  const charCount = displayVal.length;
+                  let valFontSize;
+                  if (charCount <= 2) {
+                    valFontSize = Math.round(dynamicSize * 0.28);
+                  } else if (charCount <= 4) {
+                    valFontSize = Math.round(dynamicSize * 0.23);
+                  } else if (charCount <= 6) {
+                    valFontSize = Math.round(dynamicSize * 0.18);
+                  } else {
+                    valFontSize = Math.round(dynamicSize * 0.14);
+                  }
+                  valEl.style.fontSize = `${valFontSize}px`;
+                }
+
+                const unitEl = circle.querySelector('.bubble-unit');
+                if (unitEl) {
+                  unitEl.textContent = activeUnit || item.unit || '';
+                  unitEl.style.fontSize = `${Math.round(dynamicSize * 0.11)}px`;
+                }
+              }
+            }
+          }
+          return;
+        }
+
+        const index = parseInt(indexAttr, 10);
+        const item = items[index];
+        if (!item) return;
+
+        const activeUnit = item.unit || '';
+        const resolvedVal = (activeUnit && item[activeUnit] !== undefined) ? item[activeUnit] : (item.value ?? 0);
+        item.resolvedValue = resolvedVal;
+        item.resolvedUnit = activeUnit || item.unit || '';
+
+        const circle = bubbleWrapper.querySelector('.bubble-circle');
+        if (circle) {
+          const rawSize = this.calculateBubbleSize(item);
+          const dynamicSize = Math.round(rawSize * bubbleScaleFactor);
+
+          circle.style.width = `${dynamicSize}px`;
+          circle.style.height = `${dynamicSize}px`;
+
+          if (this.renderBubbleContent) {
+            const customContent = this.renderBubbleContent(item, index === this.currentIndex, dynamicSize);
+            if (typeof customContent === 'string') {
+              circle.innerHTML = customContent;
+            } else if (customContent instanceof HTMLElement) {
+              circle.innerHTML = '';
+              circle.appendChild(customContent);
+            }
+          } else {
+            const valEl = circle.querySelector('.bubble-val');
+            if (valEl) {
+              const displayVal = formatScientific(resolvedVal);
+              valEl.textContent = displayVal;
+              const charCount = displayVal.length;
+              let valFontSize;
+              if (charCount <= 2) {
+                valFontSize = Math.round(dynamicSize * 0.28);
+              } else if (charCount <= 4) {
+                valFontSize = Math.round(dynamicSize * 0.23);
+              } else if (charCount <= 6) {
+                valFontSize = Math.round(dynamicSize * 0.18);
+              } else {
+                valFontSize = Math.round(dynamicSize * 0.14);
+              }
+              valEl.style.fontSize = `${valFontSize}px`;
+            }
+
+            const unitEl = circle.querySelector('.bubble-unit');
+            if (unitEl) {
+              unitEl.textContent = activeUnit || item.unit || '';
+              unitEl.style.fontSize = `${Math.round(dynamicSize * 0.11)}px`;
+            }
+          }
+        }
+      });
     }
 
     loadState() {
