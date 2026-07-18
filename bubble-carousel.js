@@ -52,9 +52,14 @@
       this.containerHeight = 350;
       this.resizeObserver = null;
       
-      // Bound functions for global listener removal
+      // Bound functions for scoped drag listeners
       this.globalMouseMove = null;
       this.globalMouseUp = null;
+      this.mouseDownHandler = null;
+      this.touchStartHandler = null;
+      this.touchMoveHandler = null;
+      this.touchEndHandler = null;
+      this.touchCancelHandler = null;
 
       // Center bubble foreground pop state
       this.centerBubbleInForeground = false;
@@ -162,7 +167,7 @@
           const rect = entry.contentRect;
           this.containerWidth = rect.width || this.bubblesWrapper.clientWidth;
           this.containerHeight = rect.height || this.bubblesWrapper.clientHeight;
-          this.needsRebuild = true; // Container size factors changed, recreate DOM elements
+          this.updateBubbleValuesAndSizes();
           this.render();
         }
       });
@@ -172,26 +177,73 @@
     bindEvents() {
       if (!this.bubblesWrapper) return;
 
+      this.unbindEvents();
+
+      this.mouseDownHandler = (e) => this.dragStart(e.clientX);
+      this.touchStartHandler = (e) => {
+        if (e.touches.length > 0) this.dragStart(e.touches[0].clientX);
+      };
+      this.touchMoveHandler = (e) => {
+        if (e.touches.length > 0) this.dragMove(e.touches[0].clientX);
+      };
+      this.touchEndHandler = () => this.dragEnd();
+      this.touchCancelHandler = () => this.dragEnd();
+
       // Mouse handlers
-      this.bubblesWrapper.addEventListener('mousedown', (e) => this.dragStart(e.clientX));
-      
+      this.bubblesWrapper.addEventListener('mousedown', this.mouseDownHandler);
+
+      // Touch handlers
+      this.bubblesWrapper.addEventListener('touchstart', this.touchStartHandler, { passive: true });
+      this.bubblesWrapper.addEventListener('touchmove', this.touchMoveHandler, { passive: true });
+      this.bubblesWrapper.addEventListener('touchend', this.touchEndHandler);
+      this.bubblesWrapper.addEventListener('touchcancel', this.touchCancelHandler);
+    }
+
+    unbindEvents() {
+      if (!this.bubblesWrapper) return;
+
+      this.detachGlobalDragListeners();
+
+      if (this.mouseDownHandler) {
+        this.bubblesWrapper.removeEventListener('mousedown', this.mouseDownHandler);
+      }
+      if (this.touchStartHandler) {
+        this.bubblesWrapper.removeEventListener('touchstart', this.touchStartHandler);
+      }
+      if (this.touchMoveHandler) {
+        this.bubblesWrapper.removeEventListener('touchmove', this.touchMoveHandler);
+      }
+      if (this.touchEndHandler) {
+        this.bubblesWrapper.removeEventListener('touchend', this.touchEndHandler);
+      }
+      if (this.touchCancelHandler) {
+        this.bubblesWrapper.removeEventListener('touchcancel', this.touchCancelHandler);
+      }
+
+      this.mouseDownHandler = null;
+      this.touchStartHandler = null;
+      this.touchMoveHandler = null;
+      this.touchEndHandler = null;
+      this.touchCancelHandler = null;
+    }
+
+    attachGlobalDragListeners() {
+      if (this.globalMouseMove || this.globalMouseUp) return;
+
       this.globalMouseMove = (e) => this.dragMove(e.clientX);
       this.globalMouseUp = () => this.dragEnd();
 
-      window.addEventListener('mousemove', this.globalMouseMove);
-      window.addEventListener('mouseup', this.globalMouseUp);
+      document.addEventListener('mousemove', this.globalMouseMove);
+      document.addEventListener('mouseup', this.globalMouseUp);
+    }
 
-      // Touch handlers
-      this.bubblesWrapper.addEventListener('touchstart', (e) => {
-        if (e.touches.length > 0) this.dragStart(e.touches[0].clientX);
-      }, { passive: true });
+    detachGlobalDragListeners() {
+      if (!this.globalMouseMove && !this.globalMouseUp) return;
 
-      this.bubblesWrapper.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 0) this.dragMove(e.touches[0].clientX);
-      }, { passive: true });
-
-      this.bubblesWrapper.addEventListener('touchend', () => this.dragEnd());
-      this.bubblesWrapper.addEventListener('touchcancel', () => this.dragEnd());
+      document.removeEventListener('mousemove', this.globalMouseMove);
+      document.removeEventListener('mouseup', this.globalMouseUp);
+      this.globalMouseMove = null;
+      this.globalMouseUp = null;
     }
 
     dragStart(clientX) {
@@ -199,6 +251,7 @@
       this.startX = clientX;
       this.dragActive = false;
       this.dragOffset = 0;
+      this.attachGlobalDragListeners();
       this.render();
     }
 
@@ -215,6 +268,7 @@
     dragEnd() {
       if (!this.isDragging) return;
       this.isDragging = false;
+      this.detachGlobalDragListeners();
 
       const totalOffset = this.dragOffset;
       this.dragOffset = 0;
@@ -238,7 +292,9 @@
       if (numItems === 0) return;
 
       this.currentIndex = Math.max(0, Math.min(idx, numItems - 1));
-      this.needsRebuild = true; // Focus index changed, recreate badges on the new active bubble
+      if (this.renderBubbleBadge) {
+        this.needsRebuild = true;
+      }
       this.updateAutoTitle();
       if (this.onIndexChange) {
         this.onIndexChange(this.currentIndex);
@@ -247,7 +303,8 @@
     }
 
     handleBubbleClick(item, index) {
-      const isFocused = index === this.currentIndex || index === 'center';
+      const currentIndex = Number(this.currentIndex);
+      const isFocused = Number(index) === currentIndex || index === 'center';
 
       if (index === 'center') {
         // Bring to foreground for 2 seconds
@@ -363,7 +420,7 @@
 
         // Bubble content rendering
         if (this.renderBubbleContent) {
-          const customContent = this.renderBubbleContent(item, index === this.currentIndex, dynamicSize);
+          const customContent = this.renderBubbleContent(item, Number(index) === Number(this.currentIndex), dynamicSize);
           if (typeof customContent === 'string') {
             circle.innerHTML = customContent;
           } else if (customContent instanceof HTMLElement) {
@@ -410,7 +467,7 @@
 
         // Badge overlay rendering (e.g. edit triggers, climb controls)
         if (this.renderBubbleBadge) {
-          const badgeNode = this.renderBubbleBadge(item, index, index === this.currentIndex);
+          const badgeNode = this.renderBubbleBadge(item, index, Number(index) === Number(this.currentIndex));
           if (badgeNode) {
             if (typeof badgeNode === 'string') {
               const tempDiv = document.createElement('div');
@@ -640,6 +697,15 @@
       // Render Overlay Content
       if (this.overlayContainer) {
         if (this.overlayContentNode) {
+          const hasDifferentChild = this.overlayContainer.children.length > 0 &&
+            this.overlayContainer.firstElementChild !== this.overlayContentNode;
+
+          if (hasDifferentChild) {
+            while (this.overlayContainer.firstChild) {
+              this.overlayContainer.firstChild.remove();
+            }
+          }
+
           if (this.overlayContainer.children.length === 0) {
             if (typeof this.overlayContentNode === 'string') {
               this.overlayContainer.innerHTML = this.overlayContentNode;
@@ -648,7 +714,9 @@
             }
           }
         } else {
-          this.overlayContainer.innerHTML = '';
+          while (this.overlayContainer.firstChild) {
+            this.overlayContainer.firstChild.remove();
+          }
         }
       }
     }
@@ -790,7 +858,7 @@
           circle.style.height = `${dynamicSize}px`;
 
           if (this.renderBubbleContent) {
-            const customContent = this.renderBubbleContent(item, index === this.currentIndex, dynamicSize);
+            const customContent = this.renderBubbleContent(item, Number(index) === Number(this.currentIndex), dynamicSize);
             if (typeof customContent === 'string') {
               circle.innerHTML = customContent;
             } else if (customContent instanceof HTMLElement) {
@@ -963,13 +1031,9 @@
       if (this.resizeObserver) {
         this.resizeObserver.disconnect();
       }
-      
-      if (this.globalMouseMove) {
-        window.removeEventListener('mousemove', this.globalMouseMove);
-      }
-      if (this.globalMouseUp) {
-        window.removeEventListener('mouseup', this.globalMouseUp);
-      }
+
+      this.detachGlobalDragListeners();
+      this.unbindEvents();
     }
   }
 

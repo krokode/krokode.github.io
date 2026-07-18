@@ -253,7 +253,7 @@
   box-shadow: 0 4px 10px oklch(76% 0.25 142 / 0.3) !important;
 }
 
-.inline-stats-editor {
+.bubble-carousel-widget-card .inline-stats-editor {
   position: absolute;
   inset: 0;
   background: rgba(18, 25, 20, 0.96);
@@ -275,7 +275,7 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
 
-.editor-overlay-card {
+.bubble-carousel-widget-card .editor-overlay-card {
   margin: auto 0; /* Center vertically if space exists, scroll normally from top if clipped */
 }
 

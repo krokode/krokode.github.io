@@ -20,6 +20,8 @@ npm install /path/to/3d-bubble-carousel
 
 ## Features
 
+> Note: the overlay UI uses Material Symbols for icon buttons. If the host app does not load the Material Symbols font, those icons will appear as plain text labels instead of glyphs.
+
 - **3D Orbital Layout:** Floating planet bubble coordinate placement calculated on dynamic ellipse tilt axes.
 - **Drag & Swipe Gestures:** Physics-supported mouse and touch drag scrolling.
 - **Dynamic Bubble Progress Sizing:** Automatically expands focused bubble dimensions proportional to target goals.

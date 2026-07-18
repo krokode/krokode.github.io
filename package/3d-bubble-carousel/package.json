@@ -8,8 +8,15 @@
     ".": "./src/index.js",
     "./bubble-carousel": "./src/bubble-carousel.js",
     "./add-bubble": "./src/add-bubble.js",
-    "./stats-editor": "./src/stats-editor.js"
+    "./stats-editor": "./src/stats-editor.js",
+    "./bubble-carousel.css": "./src/bubble-carousel.css",
+    "./add-bubble.css": "./src/add-bubble.css",
+    "./stats-editor.css": "./src/stats-editor.css"
   },
+  "sideEffects": [
+    "*.css",
+    "./src/**/*.css"
+  ],
   "files": [
     "src",
     "README.md"

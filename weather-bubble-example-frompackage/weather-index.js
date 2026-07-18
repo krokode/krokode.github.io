@@ -647,8 +647,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const currentUnitIndex = item.units.indexOf(item.unit);
       const nextUnit = item.units[(currentUnitIndex + 1) % item.units.length];
       
-      // Update the item
-      item.unit = nextUnit;
+      // Update the underlying data immutably so change detection sees a real state transition
+      rawData = rawData.map((act, idx) => {
+        if (idx === index) {
+          return { ...act, unit: nextUnit };
+        }
+        return act;
+      });
 
       // Save to localStorage
       const savedUnits = JSON.parse(localStorage.getItem('weather_bubble_carousel_units') || '{}');

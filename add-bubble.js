@@ -175,6 +175,7 @@
       btnCancel.className = 'editor-btn-cancel';
       btnCancel.innerHTML = '<span class="material-symbols-outlined">close</span>';
       btnCancel.addEventListener('click', () => {
+        cleanupColorDragListeners();
         if (onCancel) onCancel();
       });
 
@@ -250,30 +251,65 @@
 
       // Color field mouse events
       let isDrawingColor = false;
+      let colorDragCleanup = null;
+
+      function attachColorDragListeners() {
+        if (colorDragCleanup) return;
+
+        const handleMouseMove = (e) => {
+          if (isDrawingColor) setColorFieldCoords(e.clientX, e.clientY);
+        };
+
+        const handleMouseUp = () => {
+          isDrawingColor = false;
+          cleanupColorDragListeners();
+        };
+
+        const handleTouchMove = (e) => {
+          if (isDrawingColor && e.touches.length > 0) {
+            setColorFieldCoords(e.touches[0].clientX, e.touches[0].clientY);
+          }
+        };
+
+        const handleTouchEnd = () => {
+          isDrawingColor = false;
+          cleanupColorDragListeners();
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+        colorDragCleanup = () => {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          document.removeEventListener('touchmove', handleTouchMove);
+          document.removeEventListener('touchend', handleTouchEnd);
+          document.removeEventListener('touchcancel', handleTouchEnd);
+          colorDragCleanup = null;
+        };
+      }
+
+      function cleanupColorDragListeners() {
+        if (colorDragCleanup) {
+          colorDragCleanup();
+        }
+      }
+
       colorField.addEventListener('mousedown', (e) => {
         isDrawingColor = true;
         setColorFieldCoords(e.clientX, e.clientY);
-      });
-      window.addEventListener('mousemove', (e) => {
-        if (isDrawingColor) setColorFieldCoords(e.clientX, e.clientY);
-      });
-      window.addEventListener('mouseup', () => {
-        isDrawingColor = false;
+        attachColorDragListeners();
       });
 
       // Color field touch events
       colorField.addEventListener('touchstart', (e) => {
         isDrawingColor = true;
         if (e.touches.length > 0) setColorFieldCoords(e.touches[0].clientX, e.touches[0].clientY);
+        attachColorDragListeners();
       }, { passive: true });
-      colorField.addEventListener('touchmove', (e) => {
-        if (isDrawingColor && e.touches.length > 0) {
-          setColorFieldCoords(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      }, { passive: true });
-      window.addEventListener('touchend', () => {
-        isDrawingColor = false;
-      });
 
       // Hue slider event
       hueSlider.addEventListener('input', () => {
@@ -341,6 +377,12 @@
         updateColorPicker();
       }, 100);
 
+      const originalRemove = overlay.remove.bind(overlay);
+      overlay.remove = () => {
+        cleanupColorDragListeners();
+        originalRemove();
+      };
+
       // FORM SUBMISSION
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -364,6 +406,7 @@
           newBubble[uName] = uVal;
         });
 
+        cleanupColorDragListeners();
         if (onSave) onSave(newBubble);
       });
 
